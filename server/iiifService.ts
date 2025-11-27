@@ -26,6 +26,7 @@ export interface IIIFRegion {
   y?: number;
   width?: number;
   height?: number;
+  
 }
 
 export interface IIIFSize {
