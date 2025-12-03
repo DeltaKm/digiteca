@@ -5,6 +5,7 @@ async function uploadWithCategories() {
   
   const ftpService = new FtpStorageService();
   
+  
   const testCategories = [
     { name: "Biblioteca", file: "libro-test.txt" },
     { name: "Immagini", file: "foto-test.jpg" },
