@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+.gitignore
+dist
+attached_assets
+mobile_homepage.png
+*.local
+.env
+.env.*

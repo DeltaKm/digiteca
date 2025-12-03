@@ -200,11 +200,11 @@ export class ManifestService {
             const content = Buffer.concat(chunks).toString('utf8');
             let manifest = JSON.parse(content) as IIIFManifest;
 
-            // Get current domain for URL fixing
+            // Determine base URL for IIIF resources
+            const appBaseUrl = process.env.APP_BASE_URL;
             const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
-            const baseUrl = replitDomain
-              ? `https://${replitDomain}`
-              : 'http://localhost:5000';
+            const baseUrl = appBaseUrl
+              ?? (replitDomain ? `https://${replitDomain}` : `http://localhost:${process.env.PORT ?? 5000}`);
 
             console.log(`🔧 Fixing manifest URLs for domain: ${baseUrl}`);
 
