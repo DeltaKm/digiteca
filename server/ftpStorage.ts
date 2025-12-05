@@ -25,9 +25,9 @@ export class FtpStorageService {
 
   constructor(config?: FTPConfig) {
     this.config = config || {
-      host: process.env.FTP_HOST || "80.211.227.121",
+      host: process.env.FTP_HOST || "217.160.144.254",
       user: process.env.FTP_USER || "digiteca",
-      password: process.env.FTP_PASSWORD || "ULJ5v&tU#RWNnjG",
+      password: process.env.FTP_PASSWORD || "Digiteca2025-20",
       secure: false, // FTP standard (non FTPS)
     };
   }

@@ -15,9 +15,9 @@ async function testFtpConnection() {
     const isConnected = await ftpService.testConnection();
     
     if (isConnected) {
-      console.log("✅ FTP connection successful!");
+      console.log(" FTP connection successful!");
     } else {
-      console.log("❌ FTP connection failed!");
+      console.log(" FTP connection failed!");
       return;
     }
     
@@ -47,7 +47,7 @@ async function testFtpConnection() {
     console.log("\n🎉 All tests passed!");
     
   } catch (error) {
-    console.error("\n❌ Test failed:", error);
+    console.error("\n Test failed:", error);
     process.exit(1);
   }
 }
