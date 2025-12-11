@@ -201,10 +201,18 @@ export class ManifestService {
             let manifest = JSON.parse(content) as IIIFManifest;
 
             // Determine base URL for IIIF resources
-            const appBaseUrl = process.env.APP_BASE_URL;
-            const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
-            const baseUrl = appBaseUrl
-              ?? (replitDomain ? `https://${replitDomain}` : `http://localhost:${process.env.PORT ?? 5000}`);
+            let baseUrl = process.env.APP_BASE_URL;
+            
+            if (baseUrl) {
+              // Ensure protocol is present
+              if (!baseUrl.startsWith('http')) {
+                const isLocal = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1');
+                baseUrl = `${isLocal ? 'http' : 'https'}://${baseUrl}`;
+              }
+            } else {
+              const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
+              baseUrl = replitDomain ? `https://${replitDomain}` : `http://localhost:${process.env.PORT ?? 5000}`;
+            }
 
             console.log(`🔧 Fixing manifest URLs for domain: ${baseUrl}`);
 

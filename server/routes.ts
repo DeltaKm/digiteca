@@ -171,7 +171,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Automatically generate IIIF URLs for images
       const enrichedDocument = { ...document };
       if (document.filePath && document.mimeType?.startsWith("image/")) {
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        // Determine Base URL: use env var if set, otherwise derive from request
+        // Force HTTPS for non-localhost environments to avoid Mixed Content errors
+        let baseUrl: string;
+        
+        if (process.env.APP_BASE_URL && process.env.APP_BASE_URL.startsWith('http')) {
+           baseUrl = process.env.APP_BASE_URL;
+        } else {
+           const host = req.get('host') || 'localhost:3000';
+           const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+           const protocol = isLocal ? req.protocol : 'https';
+           baseUrl = `${protocol}://${host}`;
+        }
+
         enrichedDocument.iiifInfoUrl = `${baseUrl}/iiif/${document.id}/info.json`;
         enrichedDocument.iiifImageUrl = `${baseUrl}/iiif/${document.id}`;
 
@@ -391,7 +403,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate IIIF Image API info.json response using actual image dimensions
-      const baseUrl = `${req.protocol}://${req.get('host')}/iiif/${document.id}`;
+      let baseUrl: string;
+      if (process.env.APP_BASE_URL && process.env.APP_BASE_URL.startsWith('http')) {
+         baseUrl = `${process.env.APP_BASE_URL}/iiif/${document.id}`;
+      } else {
+         const host = req.get('host') || 'localhost:3000';
+         const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+         const protocol = isLocal ? req.protocol : 'https';
+         baseUrl = `${protocol}://${host}/iiif/${document.id}`;
+      }
+      
       const imageInfo = await iiifService.generateImageInfo(document.id, baseUrl);
 
       // Set proper headers for IIIF
