@@ -7,7 +7,12 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { SearchDocuments } from "@shared/schema";
+import type { SearchDocuments, Document } from "@shared/schema";
+
+interface DocumentsResponse {
+  documents: Document[];
+  total: number;
+}
 
 export default function Home() {
   const [searchParams, setSearchParams] = useState<SearchDocuments>({
@@ -17,7 +22,7 @@ export default function Home() {
     sortOrder: "desc",
   });
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<DocumentsResponse>({
     queryKey: ["/api/documents", searchParams],
     queryFn: async () => {
       const params = new URLSearchParams();

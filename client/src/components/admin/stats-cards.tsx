@@ -3,8 +3,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FileText, Image, Folder, CloudUpload } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
+interface StatsData {
+  totalDocuments: number;
+  totalImages: number;
+  totalCategories: number;
+  todayUploads: number;
+}
+
 export function StatsCards() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading } = useQuery<StatsData>({
     queryKey: ["/api/admin/stats"],
     retry: false,
   });

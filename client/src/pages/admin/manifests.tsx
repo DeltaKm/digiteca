@@ -61,7 +61,7 @@ export default function Manifests() {
       });
 
       if (!response.ok) {
-        if (response.status === 401 && isUnauthorizedError()) {
+        if (response.status === 401) {
           window.location.href = "/api/login";
           return;
         }

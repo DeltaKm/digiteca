@@ -348,10 +348,11 @@ assets/digiteka/kere/pratiche/${new Date().getFullYear()}/${String(new Date().ge
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
-                      target.nextElementSibling!.classList.remove('hidden');
+                      const fallback = target.nextElementSibling as HTMLElement;
+                      fallback.style.display = 'flex';
                     }}
                   />
-                  <div className="hidden h-12 w-12 rounded-lg bg-muted border border-border flex items-center justify-center">
+                  <div className="h-12 w-12 rounded-lg bg-muted border border-border items-center justify-center" style={{ display: 'none' }}>
                     <span className="text-lg">{getFileIcon(doc.mimeType)}</span>
                   </div>
                   {/* Hover preview */}

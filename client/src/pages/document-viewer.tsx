@@ -40,11 +40,11 @@ export default function DocumentViewer({ params }: DocumentViewerProps) {
   });
 
   // Fetch categories and subcategories for enriching document data
-  const { data: categoriesData } = useQuery({
+  const { data: categoriesData } = useQuery<Array<{ id: string; name: string; description?: string }>>({
     queryKey: ["/api/categories"],
   });
 
-  const { data: subcategoriesData } = useQuery({
+  const { data: subcategoriesData } = useQuery<Array<{ id: string; name: string; description?: string }>>({
     queryKey: ["/api/subcategories"],
   });
 

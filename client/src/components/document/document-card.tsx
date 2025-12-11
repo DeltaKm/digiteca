@@ -14,11 +14,11 @@ export function DocumentCard({ document }: DocumentCardProps) {
   const [, setLocation] = useLocation();
 
   // Fetch categories and subcategories for enriching document data
-  const { data: categoriesData } = useQuery({
+  const { data: categoriesData } = useQuery<Array<{ id: string; name: string; description?: string }>>({
     queryKey: ["/api/categories"],
   });
 
-  const { data: subcategoriesData } = useQuery({
+  const { data: subcategoriesData } = useQuery<Array<{ id: string; name: string; description?: string }>>({
     queryKey: ["/api/subcategories"],
   });
 
@@ -93,14 +93,8 @@ export function DocumentCard({ document }: DocumentCardProps) {
                 height: '125%'
               }}
               onError={() => {
-                const fallback = document.createElement('div');
-                fallback.className = 'w-full h-full flex items-center justify-center bg-muted';
-                fallback.innerHTML = `
-                  <div class="text-center">
-                    <div class="text-4xl mb-2">📄</div>
-                    <p class="text-sm text-muted-foreground">PDF</p>
-                  </div>
-                `;
+                // PDF preview failed - this is expected behavior
+                console.log('PDF preview failed for:', document.title);
               }}
             />
           </div>
@@ -137,7 +131,7 @@ export function DocumentCard({ document }: DocumentCardProps) {
               <Badge 
                 variant="outline" 
                 className="text-xs"
-                title={getSubcategoryDisplay()?.description || getSubcategoryDisplay()?.name}
+                title={getSubcategoryDisplay()?.description ?? getSubcategoryDisplay()?.name ?? undefined}
               >
                 {getSubcategoryDisplay()?.name}
               </Badge>

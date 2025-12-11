@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface MiradorViewerProps {
-  iiifInfoUrl?: string;
-  iiifImageUrl?: string;
-  imageUrl?: string;
+  iiifInfoUrl?: string | null;
+  iiifImageUrl?: string | null;
+  imageUrl?: string | null;
   title?: string;
   className?: string;
   onError?: (error: Error) => void;

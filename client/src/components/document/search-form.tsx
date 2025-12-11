@@ -20,7 +20,7 @@ export function SearchForm({ onSearch }: SearchFormProps) {
     format: "all",
   });
 
-  const { data: categories } = useQuery({
+  const { data: categories } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
   });
 

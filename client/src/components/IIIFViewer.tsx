@@ -3,10 +3,10 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface IIIFViewerProps {
   // IIIF URLs (prioritized in this order)
-  iiifInfoUrl?: string;
-  iiifImageUrl?: string;
+  iiifInfoUrl?: string | null;
+  iiifImageUrl?: string | null;
   // Fallback image URL
-  imageUrl?: string;
+  imageUrl?: string | null;
   className?: string;
   onError?: (error: Error) => void;
 }
@@ -199,12 +199,15 @@ export function IIIFViewer({ iiifInfoUrl, iiifImageUrl, imageUrl, className = ""
             // Try IIIF Image API info.json first (preferred method)
             try {
               console.log('Attempting to load IIIF info.json:', iiifInfoUrl);
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 10000);
               const response = await fetch(iiifInfoUrl, { 
-                timeout: 10000,
+                signal: controller.signal,
                 headers: {
                   'Accept': 'application/json'
                 }
               });
+              clearTimeout(timeoutId);
 
               if (response.ok) {
                 const iiifInfo = await response.json();
