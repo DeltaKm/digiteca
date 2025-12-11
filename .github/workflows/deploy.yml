@@ -31,6 +31,7 @@ jobs:
         uses: appleboy/ssh-action@v0.1.10
         env:
           VM_HTTP_PORT: ${{ secrets.VM_HTTP_PORT }}
+          VM_APP_DIR: ${{ secrets.VM_APP_DIR }}
           REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
           REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
         with:
