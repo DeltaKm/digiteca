@@ -2,7 +2,7 @@ import { FtpStorageService } from "./ftpStorage";
 
 /**
  * Script di test per verificare la connessione FTP
- * Uso: tsx server/testFtp.ts
+ * Uso: tsx server/testFtp.tss
  */
 async function testFtpConnection() {
   console.log("🧪 Testing FTP connection...");
