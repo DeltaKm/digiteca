@@ -1,0 +1,52 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build and push image
+        run: |
+          docker build -t ghcr.io/DeltaKm/digiteca:latest .
+          docker push ghcr.io/DeltaKm/digiteca:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v0.1.10
+        env:
+          VM_HTTP_PORT: ${{ secrets.VM_HTTP_PORT }}
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: 22
+          envs: REGISTRY_USERNAME,REGISTRY_PASSWORD,VM_APP_DIR,VM_HTTP_PORT
+          script: |
+            set -e
+            cd ${VM_APP_DIR}
+            echo "${REGISTRY_PASSWORD}" | docker login ghcr.io -u ${REGISTRY_USERNAME} --password-stdin
+            docker pull ghcr.io/DeltaKm/digiteca:latest
+            docker stop digiteca-app || true
+            docker rm digiteca-app || true
+            docker run -d \
+              --name digiteca-app \
+              --env-file .env \
+              -p ${VM_HTTP_PORT:-127.0.0.1:3000:3000} \
+              --restart unless-stopped \
+              ghcr.io/DeltaKm/digiteca:latest
