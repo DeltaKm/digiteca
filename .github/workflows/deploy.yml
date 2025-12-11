@@ -20,8 +20,8 @@ jobs:
 
       - name: Build and push image
         run: |
-          docker build -t ghcr.io/DeltaKm/digiteca:latest .
-          docker push ghcr.io/DeltaKm/digiteca:latest
+          docker build -t ghcr.io/deltakm/digiteca:latest .
+          docker push ghcr.io/deltakm/digiteca:latest
 
   deploy:
     needs: build
@@ -41,7 +41,7 @@ jobs:
             set -e
             cd ${VM_APP_DIR}
             echo "${REGISTRY_PASSWORD}" | docker login ghcr.io -u ${REGISTRY_USERNAME} --password-stdin
-            docker pull ghcr.io/DeltaKm/digiteca:latest
+            docker pull ghcr.io/deltakm/digiteca:latest
             docker stop digiteca-app || true
             docker rm digiteca-app || true
             docker run -d \
@@ -49,4 +49,4 @@ jobs:
               --env-file .env \
               -p ${VM_HTTP_PORT:-127.0.0.1:3000:3000} \
               --restart unless-stopped \
-              ghcr.io/DeltaKm/digiteca:latest
+              ghcr.io/deltakm/digiteca:latest
