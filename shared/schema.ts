@@ -253,6 +253,7 @@ export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Subcategory = typeof subcategories.$inferSelect;
 export type InsertSubcategory = z.infer<typeof insertSubcategorySchema>;
+export type SubCategory = Subcategory;
 export type Document = typeof documents.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type UpdateDocument = z.infer<typeof updateDocumentSchema>;

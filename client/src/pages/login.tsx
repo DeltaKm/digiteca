@@ -46,7 +46,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Digiteka Admin</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Digiteca Admin</CardTitle>
           <CardDescription className="text-center">
             Accedi per gestire i documenti
           </CardDescription>
@@ -65,7 +65,7 @@ export default function Login() {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@digiteka.local"
+                placeholder="admin@digiteca.local"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -96,14 +96,14 @@ export default function Login() {
                 "Accedi"
               )}
             </Button>
-
+{/* 
             <div className="mt-4 p-3 bg-muted rounded-md">
               <p className="text-xs text-muted-foreground text-center">
                 <strong>Credenziali di sviluppo:</strong><br />
-                Email: admin@digiteka.local<br />
+                Email: admin@digiteca.local<br />
                 Password: admin123
               </p>
-            </div>
+            </div> */}
           </form>
         </CardContent>
       </Card>

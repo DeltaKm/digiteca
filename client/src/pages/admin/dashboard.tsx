@@ -12,7 +12,7 @@ import { Plus, Eye, Edit, Trash2 } from "lucide-react";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import type { Document } from "@shared/schema";
 import type { Category } from "@shared/schema";
-import type { SubCategory } from "@shared/schema";
+import type { Subcategory } from "@shared/schema";
 
 interface DocumentsResponse {
   documents: Document[];
@@ -24,7 +24,7 @@ interface CategoriesResponse {
 }
 
 interface SubCategoriesResponse {
-  subcategories: SubCategory[];
+  subcategories: Subcategory[];
 }
 
 export default function Dashboard() {
@@ -63,11 +63,11 @@ export default function Dashboard() {
     enabled: isAuthenticated,
   });
 
-  const getCategoryName = (categoryId: string | undefined) => {
+  const getCategoryName = (categoryId: string | null | undefined) => {
     return categoriesData?.categories.find((cat) => cat.id === categoryId)?.name || "Non categorizzato";
   };
 
-  const getSubcategoryName = (subcategoryId: string | undefined) => {
+  const getSubcategoryName = (subcategoryId: string | null | undefined) => {
     return subcategoriesData?.subcategories.find((subcat) => subcat.id === subcategoryId)?.name || "Non sottocategorizzato";
   };
 
@@ -196,7 +196,7 @@ export default function Dashboard() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground">Gestione archivio digitale DigiteKa</p>
+              <p className="text-muted-foreground">Gestione archivio digitale Digiteca</p>
             </div>
             <div className="flex items-center space-x-4">
               <Button data-testid="button-new-document">

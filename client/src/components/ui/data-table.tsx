@@ -1,7 +1,7 @@
 import { LoadingSpinner } from "./loading-spinner";
 import { EmptyState } from "./empty-state";
 
-interface Column<T = any> {
+export interface Column<T = any> {
   header: string | React.ReactNode | (({ table }: any) => React.ReactNode);
   accessorKey?: keyof T;
   id?: string;

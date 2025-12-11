@@ -23,10 +23,10 @@ import multer from "multer";
 
 // Mock user credentials for local development
 const MOCK_USERS = {
-  "admin@digiteka.local": {
-    password: "admin123",
+  "admin@digiteca.local": {
+    password: "pmHJeU%$WFuqV$5m",
     id: "admin-user-id",
-    email: "admin@digiteka.local",
+    email: "admin@digiteca.local",
     firstName: "Admin",
     lastName: "User"
   }

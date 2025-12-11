@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable, type Column } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -298,12 +298,7 @@ assets/digiteka/kere/pratiche/${new Date().getFullYear()}/${String(new Date().ge
     window.location.href = `/admin/upload?documents=${docIds}`;
   };
 
-  const columns: Array<{
-    id?: string;
-    header: string | (({ table }: any) => React.ReactElement);
-    accessorKey?: string;
-    cell?: ({ row }: { row: { original: Document } }) => React.ReactNode;
-  }> = [
+  const columns: Column<Document>[] = [
     {
       id: "select",
       header: ({ table }: any) => (
