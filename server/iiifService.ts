@@ -1,9 +1,8 @@
 import sharp from 'sharp';
+import type { Response as ExpressResponse } from 'express';
 import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
-import { FtpStorageService } from './ftpStorage';
 import { storage } from './storage';
-import { PassThrough } from 'stream';
-import type { Response } from 'express';
+import { getStorageProvider } from './storageProvider';
 
 export interface IIIFImageInfo {
   '@context': string;
@@ -49,6 +48,7 @@ export class IIIFService {
   private objectStorageService: ObjectStorageService;
   private imageCache: Map<string, { buffer: Buffer; metadata: sharp.Metadata; timestamp: number }> = new Map();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  private storageProvider = getStorageProvider();
 
   constructor() {
     this.objectStorageService = new ObjectStorageService();
@@ -66,58 +66,25 @@ export class IIIFService {
     }
 
     try {
-      console.log(`📥 IIIF: Loading image from FTP: ${filePath}`);
-      
-      const ftpService = new FtpStorageService();
-      const client = await (ftpService as any).connect();
-      
-      const chunks: Buffer[] = [];
-      const passThrough = new PassThrough();
-      
-      return new Promise(async (resolve, reject) => {
-        passThrough.on('data', (chunk: Buffer) => chunks.push(chunk));
-        passThrough.on('end', async () => {
-          try {
-            const buffer = Buffer.concat(chunks);
-            const image = sharp(buffer);
-            const metadata = await image.metadata();
-            
-            console.log(`✅ IIIF: Image loaded successfully:`, {
-              format: metadata.format,
-              width: metadata.width,
-              height: metadata.height,
-              size: buffer.length
-            });
-            
-            // Cache the result
-            this.imageCache.set(cacheKey, { buffer, metadata, timestamp: Date.now() });
-            
-            client.close();
-            resolve({ buffer, metadata });
-          } catch (error) {
-            console.error(`❌ IIIF: Error processing image:`, error);
-            client.close();
-            reject(error);
-          }
-        });
-        
-        passThrough.on('error', (error) => {
-          console.error(`❌ IIIF: Stream error:`, error);
-          client.close();
-          reject(error);
-        });
-        
-        try {
-          await client.downloadTo(passThrough, filePath);
-        } catch (error) {
-          console.error(`❌ IIIF: FTP download error:`, error);
-          client.close();
-          reject(error);
-        }
+      console.log(`📥 IIIF: Loading image from storage: ${filePath}`);
+
+      const buffer = await this.storageProvider.downloadToBuffer(filePath);
+      const image = sharp(buffer);
+      const metadata = await image.metadata();
+
+      console.log(`✅ IIIF: Image loaded successfully:`, {
+        format: metadata.format,
+        width: metadata.width,
+        height: metadata.height,
+        size: buffer.length
       });
+
+      this.imageCache.set(cacheKey, { buffer, metadata, timestamp: Date.now() });
+
+      return { buffer, metadata };
     } catch (error) {
       console.error(`❌ IIIF: Failed to load image from ${filePath}:`, error);
-      throw new Error(`Failed to load image from ${filePath}: ${error}`);
+      throw new Error(`Failed to load image from ${filePath}: ${error instanceof Error ? error.message : error}`);
     }
   }
 
@@ -298,7 +265,7 @@ export class IIIFService {
     rotationParam: string,
     qualityParam: string,
     format: string,
-    res: Response
+    res: ExpressResponse
   ): Promise<void> {
     const document = await storage.getDocumentById(documentId);
     if (!document || !document.filePath) {

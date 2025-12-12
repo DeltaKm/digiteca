@@ -5,8 +5,8 @@ import session from "express-session";
 // import { setupAuth, isAuthenticated } from "./replitAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { FtpStorageService } from "./ftpStorage";
 import { iiifService } from "./iiifService";
+import { getStorageProvider } from "./storageProvider";
 import {
   insertCategorySchema,
   insertSubcategorySchema,
@@ -71,6 +71,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // CSRF protection for state-changing operations
   const csrfProtection = csurf({ cookie: false }); // Use session-based CSRF tokens
+
+  const storageProvider = getStorageProvider();
 
   // Auth routes
   app.get('/api/login', (req, res) => {
@@ -331,8 +333,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`✅ Access granted for file ${filePath}`);
       
       try {
-        const ftpService = new FtpStorageService();
-        
         // Determina il content type dal nome del file o dal documento
         let contentType = 'application/octet-stream';
         if (document?.mimeType) {
@@ -355,18 +355,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        res.setHeader('Content-Type', contentType);
-        res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache per 1 anno
-        
-        // Scarica il file dall'FTP direttamente nella response
-        // Se il file non esiste, questo fallirà e andremo nel catch
-        await ftpService.downloadFileToResponse(filePath, res);
+        await storageProvider.streamFileToResponse(filePath, res, {
+          contentType,
+          cacheControl: 'public, max-age=31536000'
+        });
         
         console.log(`✅ File served successfully: ${filePath}`);
-      } catch (ftpError) {
-        console.error(`❌ Error downloading from FTP:`, ftpError);
+      } catch (error) {
+        console.error(`❌ Error downloading from storage:`, error);
         if (!res.headersSent) {
-          return res.status(404).json({ error: "File not found on FTP server" });
+          return res.status(404).json({ error: "File not found" });
         }
       }
     } catch (error) {
@@ -541,6 +539,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/admin/documents/:id", isAuthenticated, csrfProtection, async (req, res) => {
     try {
+      const document = await storage.getDocumentById(req.params.id);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+
+      if (document.filePath) {
+        try {
+          await storageProvider.deleteFile(document.filePath);
+        } catch (deleteError) {
+          console.error("Error deleting file from storage:", deleteError);
+        }
+      }
+
       await storage.deleteDocument(req.params.id);
       res.status(204).send();
     } catch (error) {
@@ -1080,13 +1091,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // File upload routes
-  // FTP Upload - accetta il file direttamente nel body
+  // Legacy FTP endpoint name retained for backward compatibility (now uses storage provider)
   app.post("/api/ftp/upload", isAuthenticated, csrfProtection, async (req, res) => {
     console.log("\n========================================");
-    console.log("📤 FTP UPLOAD REQUEST RECEIVED");
+    console.log("📤 STORAGE UPLOAD REQUEST RECEIVED");
     console.log("========================================");
-    const ftpService = new FtpStorageService();
-    
     try {
       // Ottieni informazioni dal query parameters o headers
       const categoryName = req.query.category as string | undefined;
@@ -1115,17 +1124,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ error: "Empty file" });
           }
           
-          // Upload su FTP
-          console.log("🚀 Starting FTP upload...");
-          console.log(`📍 Destination: assets/digiteka/${categoryName}/${subcategoryName}/YYYY/MM/${filename}`);
+          // Upload tramite storage provider
+          console.log("🚀 Starting storage upload...");
+          console.log(`📍 Category/Subcategory: ${categoryName}/${subcategoryName}`);
           
-          const result = await ftpService.uploadFromBuffer(buffer, {
+          const result = await storageProvider.uploadBuffer(buffer, {
             categoryName,
             subcategoryName,
             filename,
+            mimeType: req.headers["content-type"] as string | undefined,
           });
           
-          console.log(`✅ FTP UPLOAD SUCCESS!`);
+          console.log(`✅ Upload SUCCESS!`);
           console.log(`📍 Full path: ${result.path}`);
           console.log("========================================\n");
           
@@ -1136,8 +1146,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             objectPath: result.path, // Per compatibilità con il client esistente
           });
         } catch (uploadError) {
-          console.error("❌ FTP upload error:", uploadError);
-          res.status(500).json({ error: "Failed to upload to FTP" });
+          console.error("❌ Storage upload error:", uploadError);
+          res.status(500).json({ error: "Failed to upload file" });
         }
       });
       
@@ -1152,14 +1162,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Original upload route (mantiene compatibilità con Google Cloud Storage)
+  // Original upload route (mantiene compatibilità con client legacy)
   app.post("/api/objects/upload", isAuthenticated, csrfProtection, async (req, res) => {
     console.log("\n========================================");
-    console.log("📤 /api/objects/upload CALLED (OLD ENDPOINT)");
+    console.log("📤 /api/objects/upload CALLED (LEGACY ENDPOINT)");
     console.log("========================================");
-    
-    // Usa FTP per upload diretto
-    const ftpService = new FtpStorageService();
     
     try {
       // Ottieni informazioni dal query parameters o body
@@ -1189,15 +1196,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ error: "Empty file" });
           }
           
-          // Upload su FTP
-          console.log("🚀 Starting FTP upload...");
-          const result = await ftpService.uploadFromBuffer(buffer, {
+          console.log("🚀 Starting storage upload...");
+          const result = await storageProvider.uploadBuffer(buffer, {
             categoryName,
             subcategoryName,
             filename,
+            mimeType: req.headers["content-type"] as string | undefined,
           });
           
-          console.log(`✅ FTP UPLOAD SUCCESS!`);
+          console.log(`✅ Upload SUCCESS!`);
           console.log(`📍 Full path: ${result.path}`);
           console.log("========================================\n");
           
@@ -1207,8 +1214,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             objectPath: result.path,
           });
         } catch (uploadError) {
-          console.error("❌ FTP upload error:", uploadError);
-          res.status(500).json({ error: "Failed to upload to FTP" });
+          console.error("❌ Storage upload error:", uploadError);
+          res.status(500).json({ error: "Failed to upload file" });
         }
       });
       

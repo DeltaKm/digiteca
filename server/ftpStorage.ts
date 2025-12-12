@@ -1,6 +1,6 @@
 import { Client as FTPClient } from "basic-ftp";
 import { randomUUID } from "crypto";
-import { Readable } from "stream";
+import { Readable, PassThrough } from "stream";
 
 export interface FTPConfig {
   host: string;
@@ -30,6 +30,28 @@ export class FtpStorageService {
       password: process.env.FTP_PASSWORD || "Digiteca2025-20",
       secure: false, // FTP standard (non FTPS)
     };
+  }
+
+  /**
+   * Scarica un file dal server FTP e restituisce un buffer
+   */
+  async downloadToBuffer(filePath: string): Promise<Buffer> {
+    const client = await this.connect();
+
+    try {
+      const chunks: Buffer[] = [];
+      const stream = new PassThrough();
+
+      return await new Promise<Buffer>((resolve, reject) => {
+        stream.on("data", (chunk: Buffer) => chunks.push(chunk));
+        stream.on("end", () => resolve(Buffer.concat(chunks)));
+        stream.on("error", reject);
+
+        client.downloadTo(stream, filePath).catch(reject);
+      });
+    } finally {
+      client.close();
+    }
   }
 
   /**
