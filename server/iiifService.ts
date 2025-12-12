@@ -4,6 +4,36 @@ import { ObjectStorageService, ObjectNotFoundError } from './objectStorage';
 import { storage } from './storage';
 import { getStorageProvider } from './storageProvider';
 
+class ConcurrencyLimiter {
+  private activeCount = 0;
+  private queue: Array<() => void> = [];
+
+  constructor(private readonly limit: number) {}
+
+  async run<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.limit > 0) {
+      if (this.activeCount >= this.limit) {
+        await new Promise<void>((resolve) => {
+          this.queue.push(resolve);
+        });
+      }
+      this.activeCount += 1;
+    }
+
+    try {
+      return await fn();
+    } finally {
+      if (this.limit > 0) {
+        this.activeCount -= 1;
+        const next = this.queue.shift();
+        if (next) {
+          next();
+        }
+      }
+    }
+  }
+}
+
 export interface IIIFImageInfo {
   '@context': string;
   '@id': string;
@@ -49,6 +79,9 @@ export class IIIFService {
   private imageCache: Map<string, { buffer: Buffer; metadata: sharp.Metadata; timestamp: number }> = new Map();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
   private storageProvider = getStorageProvider();
+  private readonly processingLimiter = new ConcurrencyLimiter(
+    Number(process.env.IIIF_MAX_CONCURRENT || 2)
+  );
 
   constructor() {
     this.objectStorageService = new ObjectStorageService();
@@ -274,12 +307,13 @@ export class IIIFService {
     }
 
     try {
-      const { buffer, metadata } = await this.getImageData(document.filePath);
+      await this.processingLimiter.run(async () => {
+        const { buffer, metadata } = await this.getImageData(document.filePath);
       
-      if (!metadata.width || !metadata.height) {
-        res.status(500).json({ error: 'Unable to process image' });
-        return;
-      }
+        if (!metadata.width || !metadata.height) {
+          res.status(500).json({ error: 'Unable to process image' });
+          return;
+        }
 
       let image = sharp(buffer);
       
@@ -378,17 +412,18 @@ export class IIIFService {
           contentType = 'image/jpeg';
       }
 
-      // Set response headers
-      res.set({
-        'Content-Type': contentType,
-        'Content-Length': outputBuffer.length.toString(),
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
-      });
+        // Set response headers
+        res.set({
+          'Content-Type': contentType,
+          'Content-Length': outputBuffer.length.toString(),
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET',
+          'Access-Control-Allow-Headers': 'Content-Type',
+          'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+        });
 
-      res.send(outputBuffer);
+        res.send(outputBuffer);
+      });
     } catch (error) {
       console.error('Error processing IIIF image request:', error);
       res.status(500).json({ error: 'Failed to process image request' });

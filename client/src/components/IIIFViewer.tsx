@@ -14,6 +14,7 @@ interface IIIFViewerProps {
 export function IIIFViewer({ iiifInfoUrl, iiifImageUrl, imageUrl, className = "", onError }: IIIFViewerProps) {
   const viewerRef = useRef<HTMLDivElement>(null);
   const viewerInstanceRef = useRef<any>(null);
+  const fetchControllerRef = useRef<AbortController | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentSource, setCurrentSource] = useState<'iiif-info' | 'iiif-image' | 'fallback' | null>(null);
@@ -199,7 +200,11 @@ export function IIIFViewer({ iiifInfoUrl, iiifImageUrl, imageUrl, className = ""
             // Try IIIF Image API info.json first (preferred method)
             try {
               console.log('Attempting to load IIIF info.json:', iiifInfoUrl);
+              if (fetchControllerRef.current) {
+                fetchControllerRef.current.abort();
+              }
               const controller = new AbortController();
+              fetchControllerRef.current = controller;
               const timeoutId = setTimeout(() => controller.abort(), 10000);
               const response = await fetch(iiifInfoUrl, { 
                 signal: controller.signal,
@@ -277,6 +282,10 @@ export function IIIFViewer({ iiifInfoUrl, iiifImageUrl, imageUrl, className = ""
       setCurrentSource(null);
       setTileFailureCount(0);
       retryAttempts.current = 0;
+      if (fetchControllerRef.current) {
+        fetchControllerRef.current.abort();
+        fetchControllerRef.current = null;
+      }
     };
   }, [iiifInfoUrl, iiifImageUrl, imageUrl, createViewer]);
 

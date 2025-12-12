@@ -22,6 +22,7 @@ export function MiradorViewer({
   const viewerInstance = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const infoFetchController = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const loadViewer = async () => {
@@ -53,7 +54,12 @@ export function MiradorViewer({
 
         if (iiifInfoUrl) {
           try {
-            const response = await fetch(iiifInfoUrl);
+            if (infoFetchController.current) {
+              infoFetchController.current.abort();
+            }
+            const controller = new AbortController();
+            infoFetchController.current = controller;
+            const response = await fetch(iiifInfoUrl, { signal: controller.signal });
             if (response.ok) {
               const iiifInfo = await response.json();
               tileSource = iiifInfo;
@@ -133,6 +139,10 @@ export function MiradorViewer({
       }
       if (viewerRef.current) {
         viewerRef.current.innerHTML = '';
+      }
+      if (infoFetchController.current) {
+        infoFetchController.current.abort();
+        infoFetchController.current = null;
       }
     };
   }, [iiifInfoUrl, iiifImageUrl, imageUrl, title, onError]);
